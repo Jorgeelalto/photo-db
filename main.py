@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import yaml
+import sys
 import os
 import re
 
@@ -71,6 +72,20 @@ class PhotoDB:
 		except Exception as e:
 			print(f"Couldn't write database to file: {str(e)}")
 
+	def load(self):
+		try:
+			with open(self.config['database_file'], mode='r') as db_file:
+				self.db = json.load(db_file)
+				return self.db
+		except Exception as e:
+			print(f"Couldn't read database from file: {str(e)}")
+
+
+	def __str__(self):
+		s = "The database:\n"
+		s += f" - contains {len(self.db['photos'].keys())} records\n"
+		s += f" - uses {int(sys.getsizeof(self.db['photos']) / 1024)} kilobytes of memory"
+		return s
 
 	def find_bad_naming(self):
 		return False
@@ -78,4 +93,6 @@ class PhotoDB:
 
 p = PhotoDB('config.yml')
 p.scan()
-p.save()
+#p.save()
+#p.load()
+print(p)
