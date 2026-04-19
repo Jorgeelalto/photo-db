@@ -1,5 +1,6 @@
 from PIL import Image, ExifTags
 from pathlib import Path
+import subprocess
 import json
 import yaml
 import sys
@@ -59,17 +60,17 @@ class PhotoDB:
 
 
 
-	def photo_get(self, id: str):
-		if self.db['photos'][id]:
-			return self.db['photos'][id].copy()
+	def photo_get(self, pid: str):
+		if self.db['photos'][pid]:
+			return self.db['photos'][pid].copy()
 		else:
 			return None
 
-	def photo_set(self, id: str, path: str):
+	def photo_set(self, pid: str, path: str):
 		photo = {}
 		photo['path'] = path
-		self.db['photos'][id] = photo
-		return photo
+		self.db['photos'][pid] = photo
+		return pid
 
 
 
@@ -90,13 +91,23 @@ class PhotoDB:
 					for f in files:
 						if f not in IGNORE:
 							if PATTERN_PHOTO.match(f):
-								self.photo_set(os.path.splitext(f)[0], f"{y}/{t}/{f}")
+								self.photo_set(os.path.splitext(f)[0][4:].replace("_",""), f"{y}/{t}/{f}")
 
 
-	def analyze(self, id: str):
+	def analyze(self, pid: str):
+
+		# -- PHOTO ENTRY PROTOTYPE --
+		# "20240313165414": {
+		#	"path": "2024/car pics/IMG_20240313_165414.png",
+		#	"location": "Getafe, Madrid",
+		#	"timestamp": "2024-03-13T16:54:14+02:00"
+		#	"description": "A picture of a silver convertible on an european street made of cobblestone",
+		#	"tags": ["car", "small street", "morning", "chill"]
+		# }
+
 		img = None
 		try:
-			img = Image.open(Path(self.config['photo_folder']) / self.db['photos'][id]['path'])
+			img = Image.open(Path(self.config['photo_folder']) / self.db['photos'][pid]['path'])
 		except Exception as e:
 			print(f"Couldn't load image to be analyzed: {str(e)}")
 			return False
@@ -115,11 +126,12 @@ class PhotoDB:
 		return True
 
 
-	def find_bad_naming(self):
+	def sanitize(self):
 		return False
 
 
 p = PhotoDB('config.yml')
 p.scan()
-p.analyze_all()
+#p.save()
+#p.analyze_all()
 print(p)
