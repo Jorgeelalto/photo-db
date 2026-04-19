@@ -1,6 +1,6 @@
-from PIL import Image, ExifTags
 from pathlib import Path
 import subprocess
+import datetime
 import json
 import yaml
 import sys
@@ -15,15 +15,23 @@ PATTERN_PHOTO = re.compile(
 	'^IMG_[0-9]{8}_[0-9]{6}\\.(heic|jpg|jpeg|png|mov|mp4)$',
 	flags=re.IGNORECASE)
 IGNORE = [
-		".DS_Store"
+		'.DS_Store'
 	]
-
 
 
 class PhotoDB:
 
+	# ---------------
+	# Data structures
+	# ---------------
+
 	config = {}
 	db = {}
+
+
+	# ------------------
+	# Internal functions
+	# ------------------
 
 	def __init__(self, config_path: str):
 		try:
@@ -40,6 +48,10 @@ class PhotoDB:
 		s += f" - uses {int(sys.getsizeof(self.db['photos']) / 1024)} kilobytes of memory"
 		return s
 
+
+	# ------------------------
+	# Database file management
+	# ------------------------
 
 	def save(self):
 		try:
@@ -59,6 +71,9 @@ class PhotoDB:
 			return None
 
 
+	# ------------------------
+	# Database entry functions
+	# ------------------------
 
 	def photo_get(self, pid: str):
 		if self.db['photos'][pid]:
@@ -73,6 +88,9 @@ class PhotoDB:
 		return pid
 
 
+	# -------------------
+	# Database population
+	# -------------------
 
 	def scan(self):
 		root = Path(self.config['photo_folder'])
@@ -94,44 +112,89 @@ class PhotoDB:
 								self.photo_set(os.path.splitext(f)[0][4:].replace("_",""), f"{y}/{t}/{f}")
 
 
-	def analyze(self, pid: str):
+	# -------------------
+	# Metadata extraction
+	# -------------------
+
+	def extract_exif(self, pid: str):
 
 		# -- PHOTO ENTRY PROTOTYPE --
 		# "20240313165414": {
 		#	"path": "2024/car pics/IMG_20240313_165414.png",
 		#	"location": "Getafe, Madrid",
+		#	"altitude": ""
+		#	"latitude":	""
+		#	"longitude": ""
 		#	"timestamp": "2024-03-13T16:54:14+02:00"
 		#	"description": "A picture of a silver convertible on an european street made of cobblestone",
 		#	"tags": ["car", "small street", "morning", "chill"]
 		# }
 
-		img = None
+		out = ""
 		try:
-			img = Image.open(Path(self.config['photo_folder']) / self.db['photos'][pid]['path'])
+			out = subprocess.run(['exiftool', '-j', Path(self.config['photo_folder']) / self.db['photos'][pid]['path']], stdout=subprocess.PIPE).stdout.decode(encoding='utf-8')
+			out = json.loads(out)[0]
 		except Exception as e:
-			print(f"Couldn't load image to be analyzed: {str(e)}")
+			print(f"Can't read metadata with exiftool: {str(e)}")
 			return False
-		exif = img.getexif()
-		if exif:
-			for key, val in exif.items():
-				if key in ExifTags.TAGS:
-					print(f'{ExifTags.TAGS[key]}:{val}')
-				else:
-					print(f'{key}:{val}')
-		return False
 
-	def analyze_all(self):
+		# Timestamp
+		if out['CreateDate']:
+			self.db['photos'][pid]['timestamp'] = out['CreateDate']
+		else:
+			# If no data, assume it's taken in Spain timezone (CEST, UTC+2)
+			t = f"{pid[0:4]}-{pid[4:6]}-{pid[6:8]}T{pid[8:10]}:{pid[10:12]}:{pid[12:14]}+02:00"
+			self.db['photos'][pid]['timestamp'] = t
+
+		# Location
+		try:
+			self.db['photos'][pid]['altitude'] = out['GPSAltitude']
+			self.db['photos'][pid]['latitude'] = out['GPSLatitude']
+			self.db['photos'][pid]['longitude'] = out['GPSLongitude']
+		except:
+			print(f"Missing some or all coordinates on {pid}, can't extract location")
+
+		return pid
+
+	def extract_exif_all(self):
 		for p in self.db['photos'].keys():
-			self.analyze(p)
+			self.extract_exif(p)
 		return True
 
 
+	# -------------------
+	# Metadata generation
+	# -------------------
+
+	def resolve_location(self, pid):
+		return True
+
+	def resolve_location_all(self):
+		for p in self.db['photos'].keys():
+			self.resolve_location(p)
+		return True
+
+
+	def describe(self):
+		return True
+
+	def describe_all(self):
+		for p in self.db['photos'].keys():
+			self.describe(p)
+		return True
+
+
+	# ----------------
+	# Other operations
+	# ----------------
+
 	def sanitize(self):
-		return False
+		return True
+
 
 
 p = PhotoDB('config.yml')
 p.scan()
 #p.save()
-#p.analyze_all()
+p.extract_exif_all()
 print(p)
