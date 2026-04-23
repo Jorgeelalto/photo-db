@@ -1,2 +1,7 @@
+# Python stuff
+*pycache*
+
+# Internal stuff
 config.yml
 db.json
+test_pics/
