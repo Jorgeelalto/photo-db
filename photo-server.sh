@@ -3,6 +3,6 @@ source photo_venv/bin/activate
 
 pip3 install -r requirements.txt
 
-python3 main.py
+flask --app photo-server run
 
 deactivate
