@@ -7,6 +7,9 @@ p = photodb.PhotoDB('config.yml')
 
 app = Flask(__name__)
 
+@app.route("/")
+def root():
+    return str(p)
 
 @app.route("/load")
 def load():

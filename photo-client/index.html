@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="robots" content="noindex">
+        <link rel="stylesheet" type="text/css" href="bootstrap/bootstrap.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Photo Database</title>
+    </head>
+    <body class="bg-black">
+        <div class="mx-5">
+            <div class="row p-3">
+                <div class="col-2">
+                    <button type="button" class="btn w-100 btn-dark" onclick="ui_load();">Load</button>
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn w-100 btn-dark" onclick="ui_scan();">Scan</button>
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn w-100 btn-dark" onclick="ui_analyze();">Analyze</button>
+                </div>
+                <div class="col-6">
+                    <input id="search-box" type="text" class="form-control" placeholder="Description or tags">
+                </div>
+            </div>
+            <div class="row px-3">
+                <i><tt id="status-text" class="text-white-50">Ready.</tt></i>
+            </div>
+        </div>
+
+        <div id="pic-container" class="row">
+            <div id="pic-item" class="col-3 p-2"><img class="img-fluid" src=""></div>
+        </div>
+
+        <script src="photo-client.js"></script>
+    </body>
+</html>
