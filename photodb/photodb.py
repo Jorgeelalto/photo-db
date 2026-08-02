@@ -1,6 +1,11 @@
+from pillow_heif import register_heif_opener
+from openai import OpenAI
 from pathlib import Path
+from io import BytesIO
+from PIL import Image
 import subprocess
 import datetime
+import base64
 import json
 import yaml
 import sys
@@ -43,6 +48,7 @@ class PhotoDB:
 			print(f"Couldn't load config file: {str(e)}")
 			return None
 		self.db['photos'] = {}
+		register_heif_opener()
 
 	def __str__(self):
 		s = "The database:\n"
@@ -183,12 +189,42 @@ class PhotoDB:
 		return True
 
 
-	def describe(self, pid):
+	def encode_image(self, image_path):
+		img = Image.open(image_path)
+		img.thumbnail((1024, 1024))
+		buffered = BytesIO()
+		img.save(buffered, format="JPEG")
+		return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+	def describe(self, pid, llm):
+		print(f"Describing {pid}")
+		base64_image = self.encode_image(PHOTO_FOLDER + "/" + self.db["photos"][pid]["path"])
+		response = llm.responses.create(
+			input = [{
+				"role": "user",
+				"content": [
+					{"type": "input_text", "text": self.config["description_prompt"]},
+					{"type": "input_image", "image_url": f"data:image/jpeg;base64,{base64_image}"}
+				]
+			}]
+		)
+		response = response.output_text
+		print(response)
+		# Some cleanup of common issues with smaller models
+		response = response.replace("```json", "")
+		response = response.replace("```", "")
+		response = json.loads(str(response))
+		self.db["photos"][pid]["description"] = response["description"]
+		self.db["photos"][pid]["tags"] = response["tags"]
 		return True
 
 	def describe_all(self, overwrite=False):
+		llm = OpenAI(
+			base_url = f"http://{self.config["llamafile_host"]}:{self.config["llamafile_port"]}/v1",
+			api_key = "ollama"
+			)
 		for p in self.db['photos'].keys():
-			self.describe(p)
+			self.describe(p, llm)
 		return True
 
 

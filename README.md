@@ -18,8 +18,11 @@ In order to start the program you need a `config.yml` file in the root of the re
 ```yaml
 # Where the database file will be generated, saved and read. Can be absolute or relative
 database_file: "db.json"
+# Host and port of OpenAI API compatible server. I use llamafiles for this
+llamafile_host: "127.0.0.1"
+llamafile_port: 1290
 ```
 
-Do `./run_analyze.sh` for the database to be created or updated.
+Do `./run_analyze.sh` for the database to be created or updated. This needs an OpenAI API compatible server. I run small local LLMs using llamafile in server mode.
 
 Do `./run_server` for the backend of the web client to be started up. Then you can open `./web_client/index.html` in a web browser to look at the pictures and search.
