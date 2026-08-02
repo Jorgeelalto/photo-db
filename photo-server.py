@@ -20,6 +20,9 @@ def load():
 def get_all():
     return jsonify(p.db)
 
-@app.route("/search")
-def search():
-    return jsonify(p.db)
+@app.route("/search/<query>")
+def search(query):
+    if (query == "all"):
+        return jsonify(p.db)
+    else:
+        return jsonify(p.db)

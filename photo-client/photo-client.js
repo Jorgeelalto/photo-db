@@ -28,6 +28,7 @@ function ui_load(json) {
 
 function button_search() {
 	search = document.getElementById("search-box").value;
+	if (! search) {search = "all"};
 	print("button_search(" + search + ")");
 	fetch(API_URL + "/search/" + search)
 		.then((response) => {
