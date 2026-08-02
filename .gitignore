@@ -6,3 +6,6 @@ server_venv
 config.yml
 db.json
 photo_folder/
+
+# Others
+.DS_Store
