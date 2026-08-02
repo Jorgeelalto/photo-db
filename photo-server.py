@@ -9,30 +9,17 @@ app = Flask(__name__)
 
 @app.route("/")
 def root():
-    return str(p)
+    return {"message": str(p)}
 
 @app.route("/load")
 def load():
     p.load()
-    return str(p)
-
-@app.route("/save")
-def save():
-    p.save()
-    return str(p)
-
-@app.route("/scan")
-def scan():
-    p.scan()
-    return str(p)
-
-@app.route("/analyze")
-def analyze():
-    p.extract_exif_all()
-    #p.resolve_location_all()
-    #p.describe_all()
-    return str(p)
+    return {"message": str(p)}
 
 @app.route("/photos/all")
 def get_all():
+    return jsonify(p.db)
+
+@app.route("/search")
+def search():
     return jsonify(p.db)

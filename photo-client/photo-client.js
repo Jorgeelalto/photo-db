@@ -1,32 +1,53 @@
+API_URL="http://127.0.0.1:5000"
+
+
+
 function print(p) {
-	console.log(p)
-	document.getElementById("status-text").innerText = p
-}
-
-function ui_load() {
-	print("ui_load()")
-	return 0
-}
-
-function ui_scan() {
-	print("ui_scan()")
-	return 0
-}
-
-function ui_analyze() {
-	print("ui_analyze()")
-	return 0
-}
-
-function ui_search() {
-	print("ui_search()")
-	return 0
+	console.log(p);
+	document.getElementById("status-text").innerText = p;
 }
 
 
-var wage = document.getElementById("search-box");
-wage.addEventListener("keydown", function (e) {
+function button_load() {
+	fetch(API_URL + "/load")
+		.then((response) => {
+			if (!response.ok) {
+				throw new Error("HTTP error: " + response.status);
+			}
+			return response.json();
+		}).then((json) => ui_load(json))
+			.catch((err) => console.error("Fetch problem: " + err.message));
+	return 0;
+}
+
+function ui_load(json) {
+	print(json["message"]);
+	return 0;
+}
+
+
+function button_search() {
+	search = document.getElementById("search-box").value;
+	print("button_search(" + search + ")");
+	fetch(API_URL + "/search/" + search)
+		.then((response) => {
+			if (!response.ok) {
+				throw new Error("HTTP error: " + response.status);
+			}
+			return response.json();
+		}).then((json) => ui_search(json))
+			.catch((err) => console.error("Fetch problem: " + err.message));
+	return 0;
+}
+
+var sbox = document.getElementById("search-box");
+sbox.addEventListener("keydown", function (e) {
     if (e.code === "Enter") {
-        ui_search(e);
+        button_search(e);
     }
 });
+
+function ui_search(json) {
+	print(json);
+	return 0;
+}
