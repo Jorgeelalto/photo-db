@@ -162,7 +162,7 @@ class PhotoDB:
 
 		return pid
 
-	def extract_exif_all(self):
+	def extract_exif_all(self, overwrite=False):
 		for p in self.db['photos'].keys():
 			self.extract_exif(p)
 		return True
@@ -175,7 +175,7 @@ class PhotoDB:
 	def resolve_location(self, pid):
 		return True
 
-	def resolve_location_all(self):
+	def resolve_location_all(self, overwrite=False):
 		for p in self.db['photos'].keys():
 			self.resolve_location(p)
 		return True
@@ -184,7 +184,7 @@ class PhotoDB:
 	def describe(self, pid):
 		return True
 
-	def describe_all(self):
+	def describe_all(self, overwrite=False):
 		for p in self.db['photos'].keys():
 			self.describe(p)
 		return True
