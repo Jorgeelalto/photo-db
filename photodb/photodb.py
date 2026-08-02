@@ -8,6 +8,8 @@ import os
 import re
 
 
+PHOTO_FOLDER="./photo_folder"
+
 PATTERN_YEAR = re.compile(
 	'^(19[0-9]{2})|(20[0-9]{2})$'
 	)
@@ -94,7 +96,7 @@ class PhotoDB:
 	# -------------------
 
 	def scan(self):
-		root = Path(self.config['photo_folder'])
+		root = Path(PHOTO_FOLDER)
 		years = os.listdir(root)
 		l = []
 		for y in years:
@@ -135,7 +137,7 @@ class PhotoDB:
 
 		out = ""
 		try:
-			out = subprocess.run(['exiftool', '-j', Path(self.config['photo_folder']) / self.db['photos'][pid]['path']], stdout=subprocess.PIPE).stdout.decode(encoding='utf-8')
+			out = subprocess.run(['exiftool', '-j', Path(PHOTO_FOLDER) / self.db['photos'][pid]['path']], stdout=subprocess.PIPE).stdout.decode(encoding='utf-8')
 			out = json.loads(out)[0]
 		except Exception as e:
 			print(f"Can't read metadata with exiftool: {str(e)}")

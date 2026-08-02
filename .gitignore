@@ -1,8 +1,8 @@
 # Python stuff
 *pycache*
-photo_venv
+server_venv
 
 # Internal stuff
 config.yml
 db.json
-test_pics/
+photo_folder/

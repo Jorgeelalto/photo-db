@@ -1,5 +1,5 @@
 API_URL="http://127.0.0.1:1289"
-
+PHOTO_FOLDER="./photo_folder"
 
 
 function print(p) {
@@ -49,6 +49,16 @@ sbox.addEventListener("keydown", function (e) {
 });
 
 function ui_search(json) {
-	print(json);
+	photo_list = json["photos"];
+	template = document.getElementById("pic-item").cloneNode("deep");
+	div = document.getElementById("pic-container");
+	div.innerHTML = "";
+	Object.entries(photo_list).forEach(([key, value]) => {
+    	console.log(`${key}: ${value}`);
+    	new_item = template.cloneNode("deep");
+		new_item.children[0].src = PHOTO_FOLDER + "/" + value.path;
+		new_item.children[0].alt = key;
+		div.appendChild(new_item);
+	});
 	return 0;
 }
