@@ -62,3 +62,8 @@ function ui_search(json) {
 	});
 	return 0;
 }
+
+function click_on_photo(element) {
+	pid = element.children[0].alt;
+	window.open("photo.html?pid=" + pid, "_blank").focus();
+}
