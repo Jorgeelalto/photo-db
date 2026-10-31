@@ -1,3 +1,6 @@
+import re
+
+
 PHOTO_FOLDER="./photo_folder"
 
 PATTERN_YEAR = re.compile(
