@@ -32,10 +32,9 @@ class PhotoDB:
 
     def __init__(self):
         # Initialize SQLite database
-        self.con = sqlite3.connect("photo.db")
-        self.cur = self.con.cursor()
-        self.cur.executescript(DATABASE_STRUCTURE)
-        self.scan()
+        with sqlite3.connect("photo.db") as con:
+            cur = con.cursor()
+            cur.executescript(DATABASE_STRUCTURE)
 
         # Other functions
         register_heif_opener()
@@ -61,18 +60,22 @@ class PhotoDB:
         years = l
         years.sort(reverse=True)
 
-        for y in years:
-            for t in os.listdir(root / y):
-                if t not in IGNORE:
-                    files = os.listdir(root / y / t)
-                    for f in files:
-                        if f not in IGNORE:
-                            if PATTERN_PHOTO.match(f):
-                                photo_id = os.path.splitext(f)[0][4:].replace("_","")
-                                photo_path = f"{y}/{t}/{f}"
-                                print(f"Inserting {photo_id} (path {photo_path})")
-                                self.cur.execute("INSERT OR REPLACE INTO Photos (ID, file_path) VALUES (?, ?)", (photo_id, photo_path))
-                                self.con.commit()
+        with sqlite3.connect("photo.db") as con:
+            cur = con.cursor()
+            for y in years:
+                for t in os.listdir(root / y):
+                    if t not in IGNORE:
+                        files = os.listdir(root / y / t)
+                        for f in files:
+                            if f not in IGNORE:
+                                if PATTERN_PHOTO.match(f):
+                                    photo_id = os.path.splitext(f)[0][4:].replace("_","")
+                                    photo_path = f"{y}/{t}/{f}"
+                                    print(f"Inserting {photo_id} (path {photo_path})")
+                                    try:
+                                        cur.execute("INSERT OR IGNORE INTO Photos (ID, file_path) VALUES (?, ?)", (photo_id, photo_path))
+                                    except Exception as e:
+                                        print(f"Error executing or committing insertion: {e}")
 
 
     # ------------------------------
@@ -170,10 +173,18 @@ app = Flask(__name__)
 def root():
     return {"message": str(p)}
 
-@app.route("/photos/all")
-def get_all():
-    return {"message": "Hello world!"}
+@app.route("/scan")
+def scan():
+    try:
+        p.scan()
+    except Exception as e:
+        return {"message": "Scan error"}, 500
+    return {"message": "Scan complete"}
 
-@app.route("/search/<query>")
-def search(query):
+@app.route("/photos")
+def get_all():
+    return {"message": "Retrieving all photos"}
+
+@app.route("/photos/<query>")
+def photos(query):
     return {"message": f"Query is {query}"}
