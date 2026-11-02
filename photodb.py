@@ -71,7 +71,7 @@ class PhotoDB:
                                 if PATTERN_PHOTO.match(f):
                                     photo_id = os.path.splitext(f)[0][4:].replace("_","")
                                     photo_path = f"{y}/{t}/{f}"
-                                    print(f"Inserting {photo_id} (path {photo_path})")
+                                    print(f"Found {photo_path}")
                                     try:
                                         cur.execute("INSERT OR IGNORE INTO Photos (ID, file_path) VALUES (?, ?)", (photo_id, photo_path))
                                     except Exception as e:
@@ -82,41 +82,61 @@ class PhotoDB:
     # Metadata extraction/generation
     # ------------------------------
 
-    def extract_exif(self, pid: str):
-        return None # TODO rework with SQLite
+    def extract_exif(self):
 
-        out = ""
-        try:
-            out = subprocess.run(['exiftool', '-j', Path(PHOTO_FOLDER) / self.db['photos'][pid]['path']], stdout=subprocess.PIPE).stdout.decode(encoding='utf-8')
-            out = json.loads(out)[0]
-        except Exception as e:
-            print(f"Can't read metadata with exiftool: {str(e)}")
-            return False
+        with sqlite3.connect("photo.db") as con:
+            cur = con.cursor()
+            todo_list = []
 
-        # Timestamp
-        if 'CreateDate' in out.keys():
-            self.db['photos'][pid]['timestamp'] = out['CreateDate']
-        else:
-            # If no data, assume it's taken in Spain timezone (CEST, UTC+2)
-            t = f"{pid[0:4]}-{pid[4:6]}-{pid[6:8]}T{pid[8:10]}:{pid[10:12]}:{pid[12:14]}+02:00"
-            self.db['photos'][pid]['timestamp'] = t
+            for row in cur.execute("SELECT ID, file_path FROM Photos WHERE time_stamp IS NULL ORDER BY ID"):
+                todo_list.append(row)
 
-        # Location
-        try:
-            self.db['photos'][pid]['altitude'] = out['GPSAltitude']
-            self.db['photos'][pid]['latitude'] = out['GPSLatitude']
-            self.db['photos'][pid]['longitude'] = out['GPSLongitude']
-        except:
-            print(f"Missing some or all coordinates on {pid}, can't extract location")
+            for row in todo_list:
+                ID = row[0]
+                file_path = row[1]
+                print(f"Extracting metadata from {file_path}")
+                try:
+                    out = ""
+                    try:
+                        out = subprocess.run(['exiftool', '-j', Path(PHOTO_FOLDER) / file_path], stdout=subprocess.PIPE).stdout.decode(encoding='utf-8')
+                        out = json.loads(out)[0]
+                    except Exception as e:
+                        print(f"Can't read metadata with exiftool: {str(e)}")
+                        return False
 
-        # Update record modification time
-        self.db['photos'][pid]['record']['last_modified'] = datetime.datetime.now().timestamp()
+                    # Timestamp
+                    new_timestamp = None
+                    if 'CreateDate' in out.keys():
+                        new_timestamp = out['CreateDate']
+                    elif 'FileModifyDate' in out.keys():
+                        new_timestamp = out['FileModifyDate']
+                    else:
+                        # If no data, create it from the filename
+                        id_str = str(ID)
+                        new_timestamp = f"{id_str[0:4]}-{id_str[4:6]}-{id_str[6:8]}T{id_str[8:10]}:{id_str[10:12]}:{id_str[12:14]}"
 
-        return pid
+                    # Location
+                    new_latitude = out['GPSLatitude'] if 'GPSLatitude' in out.keys() else "N/A"
+                    new_longitude = out['GPSLongitude'] if 'GPSLongitude' in out.keys() else "N/A"
+                    new_altitude = out['GPSAltitude'] if 'GPSAltitude' in out.keys() else "N/A"
 
-    def resolve_location(self, pid):
-        return None # TODO rework with SQLite
-        return True
+                    # Update record modification time
+                    new_last_modified = datetime.datetime.now().timestamp()
+
+                    # Insert all new data
+                    cur.execute("""
+                        UPDATE Photos SET
+                        time_stamp = ?,
+                        altitude = ?,
+                        latitude = ?,
+                        longitude = ?,
+                        last_modified = ?
+                        WHERE ID = ?
+                        """, (new_timestamp, new_altitude, new_latitude, new_longitude, new_last_modified, ID))
+                except Exception as e:
+                    print(f"Error when extracting metadata of {ID}: {e}")
+                    return False
+
 
     def encode_image(self, image_path):
         img = Image.open(image_path)
@@ -173,6 +193,8 @@ app = Flask(__name__)
 def root():
     return {"message": str(p)}
 
+
+# Scanning and deterministic information extraction
 @app.route("/scan")
 def scan():
     try:
@@ -181,6 +203,16 @@ def scan():
         return {"message": "Scan error"}, 500
     return {"message": "Scan complete"}
 
+@app.route("/extract_metadata")
+def extract_metadata():
+    try:
+        p.extract_exif()
+    except Exception as e:
+        return {"message": "Metadata extraction error"}, 500
+    return {"message": "Metadata extraction complete"}
+
+
+# Picture querying
 @app.route("/photos")
 def get_all():
     return {"message": "Retrieving all photos"}
