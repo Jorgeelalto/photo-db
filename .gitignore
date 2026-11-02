@@ -4,6 +4,7 @@
 
 # Internal stuff
 photo_folder/
+*.db
 
 # Others
 .DS_Store

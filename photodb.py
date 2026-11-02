@@ -32,8 +32,11 @@ class PhotoDB:
 
     def __init__(self):
         # Initialize SQLite database
-        con = sqlite3.connect("photo.db")
-        cur = con.cursor()
+        self.con = sqlite3.connect("photo.db")
+        self.cur = self.con.cursor()
+        self.cur.executescript(DATABASE_STRUCTURE)
+        self.scan()
+
         # Other functions
         register_heif_opener()
 
@@ -49,7 +52,6 @@ class PhotoDB:
     # -------------------
 
     def scan(self):
-        return None # TODO rework with SQLite
         root = Path(PHOTO_FOLDER)
         years = os.listdir(root)
         l = []
@@ -66,29 +68,19 @@ class PhotoDB:
                     for f in files:
                         if f not in IGNORE:
                             if PATTERN_PHOTO.match(f):
-                                self.photo_set(os.path.splitext(f)[0][4:].replace("_",""), f"{y}/{t}/{f}")
+                                photo_id = os.path.splitext(f)[0][4:].replace("_","")
+                                photo_path = f"{y}/{t}/{f}"
+                                print(f"Inserting {photo_id} (path {photo_path})")
+                                self.cur.execute("INSERT OR REPLACE INTO Photos (ID, file_path) VALUES (?, ?)", (photo_id, photo_path))
+                                self.con.commit()
 
 
-    # -------------------
-    # Metadata extraction
-    # -------------------
+    # ------------------------------
+    # Metadata extraction/generation
+    # ------------------------------
 
     def extract_exif(self, pid: str):
         return None # TODO rework with SQLite
-
-        # -- PHOTO ENTRY PROTOTYPE --
-        # "20240313165414": {
-        #   "path": "2024/car pics/IMG_20240313_165414.png",
-        #   "location": "Getafe, Madrid",
-        #   "altitude": ""
-        #   "latitude": ""
-        #   "longitude": ""
-        #   "timestamp": "2024-03-13T16:54:14+02:00"
-        #   "description": "A picture of a silver convertible on an european street made of cobblestone",
-        #   "tags": ["car", "small street", "morning", "chill"]
-        #   "record": {
-        #       "last_modified": "1776933993.213789"
-        # }
 
         out = ""
         try:
@@ -119,27 +111,9 @@ class PhotoDB:
 
         return pid
 
-    def extract_exif_all(self, overwrite=False):
-        return None # TODO rework with SQLite
-        for p in self.db['photos'].keys():
-            self.extract_exif(p)
-        return True
-
-
-    # -------------------
-    # Metadata generation
-    # -------------------
-
     def resolve_location(self, pid):
         return None # TODO rework with SQLite
         return True
-
-    def resolve_location_all(self, overwrite=False):
-        return None # TODO rework with SQLite
-        for p in self.db['photos'].keys():
-            self.resolve_location(p)
-        return True
-
 
     def encode_image(self, image_path):
         img = Image.open(image_path)
@@ -179,14 +153,6 @@ class PhotoDB:
             )
         for p in self.db['photos'].keys():
             self.describe(p, llm)
-        return True
-
-
-    # ----------------
-    # Other operations
-    # ----------------
-
-    def sanitize(self):
         return True
 
 
