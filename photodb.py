@@ -6,6 +6,7 @@ from io import BytesIO
 from PIL import Image
 import subprocess
 import datetime
+import sqlite3
 import base64
 import json
 import yaml
@@ -21,7 +22,8 @@ class PhotoDB:
     # Data structures
     # ---------------
 
-    db = {}
+    con = None
+    cur = None
 
 
     # ------------------
@@ -29,7 +31,10 @@ class PhotoDB:
     # ------------------
 
     def __init__(self):
-        self.db['photos'] = {}
+        # Initialize SQLite database
+        con = sqlite3.connect("photo.db")
+        cur = con.cursor()
+        # Other functions
         register_heif_opener()
 
     def __str__(self):
@@ -37,50 +42,6 @@ class PhotoDB:
         # s += f" - contains {len(self.db['photos'].keys())} records\n"
         # s += f" - uses {int(sys.getsizeof(self.db['photos']) / 1024)} kilobytes of memory"
         return s
-
-
-    # ------------------------
-    # Database file management
-    # ------------------------
-
-    def save(self):
-        return None # TODO rework with SQLite
-        try:
-            with open(DATABASE_FILE, mode='w') as db_file:
-                return json.dump(self.db, db_file, sort_keys=True)
-        except Exception as e:
-            print(f"Couldn't write database to file: {str(e)}")
-            return None
-
-    def load(self):
-        return None # TODO rework with SQLite
-        try:
-            with open(DATABASE_FILE, mode='r') as db_file:
-                self.db = json.load(db_file)
-                return self.db
-        except Exception as e:
-            print(f"Couldn't read database from file: {str(e)}")
-            return None
-
-
-    # ------------------------
-    # Database entry functions
-    # ------------------------
-
-    def photo_get(self, pid: str):
-        return None # TODO rework with SQLite
-        if self.db['photos'][pid]:
-            return self.db['photos'][pid].copy()
-        else:
-            return None
-
-    def photo_set(self, pid: str, path: str):
-        return None # TODO rework with SQLite
-        photo = {}
-        photo['path'] = path
-        photo['record'] = {}
-        self.db['photos'][pid] = photo
-        return pid
 
 
     # -------------------
@@ -243,18 +204,10 @@ app = Flask(__name__)
 def root():
     return {"message": str(p)}
 
-@app.route("/load")
-def load():
-    p.load()
-    return {"message": str(p)}
-
 @app.route("/photos/all")
 def get_all():
-    return jsonify(p.db)
+    return {"message": "Hello world!"}
 
 @app.route("/search/<query>")
 def search(query):
-    if (query == "all"):
-        return jsonify(p.db)
-    else:
-        return jsonify(p.db)
+    return {"message": f"Query is {query}"}
