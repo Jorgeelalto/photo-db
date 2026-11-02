@@ -21,7 +21,6 @@ class PhotoDB:
     # Data structures
     # ---------------
 
-    config = {}
     db = {}
 
 
@@ -47,7 +46,7 @@ class PhotoDB:
     def save(self):
         return None # TODO rework with SQLite
         try:
-            with open(self.config['database_file'], mode='w') as db_file:
+            with open(DATABASE_FILE, mode='w') as db_file:
                 return json.dump(self.db, db_file, sort_keys=True)
         except Exception as e:
             print(f"Couldn't write database to file: {str(e)}")
@@ -56,7 +55,7 @@ class PhotoDB:
     def load(self):
         return None # TODO rework with SQLite
         try:
-            with open(self.config['database_file'], mode='r') as db_file:
+            with open(DATABASE_FILE, mode='r') as db_file:
                 self.db = json.load(db_file)
                 return self.db
         except Exception as e:
@@ -196,7 +195,7 @@ class PhotoDB:
             input = [{
                 "role": "user",
                 "content": [
-                    {"type": "input_text", "text": self.config["description_prompt"]},
+                    {"type": "input_text", "text": DESCRIPTION_PROMPT},
                     {"type": "input_image", "image_url": f"data:image/jpeg;base64,{base64_image}"}
                 ]
             }]
@@ -214,7 +213,7 @@ class PhotoDB:
     def describe_all(self, overwrite=False):
         return None # TODO rework with SQLite
         llm = OpenAI(
-            base_url = f"http://{self.config["llamafile_host"]}:{self.config["llamafile_port"]}/v1",
+            base_url = f"http://{LLAMAFILE_HOST}:{LLAMAFILE_PORT}/v1",
             api_key = "ollama"
             )
         for p in self.db['photos'].keys():
