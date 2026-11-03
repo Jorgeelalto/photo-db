@@ -39,10 +39,15 @@ class PhotoDB:
         # Other functions
         register_heif_opener()
 
+
     def __str__(self):
-        s = "The database:\n"
-        # s += f" - contains {len(self.db['photos'].keys())} records\n"
-        # s += f" - uses {int(sys.getsizeof(self.db['photos']) / 1024)} kilobytes of memory"
+        s = ""
+        with sqlite3.connect("photo.db") as con:
+            cur = con.cursor()
+            for row in cur.execute("SELECT * FROM dbstat"):
+                s += str(row) + ", "
+        if len(s) > 0:
+            s = s[:-2]
         return s
 
 
@@ -76,6 +81,19 @@ class PhotoDB:
                                         cur.execute("INSERT OR IGNORE INTO Photos (ID, file_path) VALUES (?, ?)", (photo_id, photo_path))
                                     except Exception as e:
                                         print(f"Error executing or committing insertion: {e}")
+
+
+    # --------------
+    # Data retrieval
+    # --------------
+
+    def get_all(self):
+        results = []
+        with sqlite3.connect("photo.db") as con:
+            cur = con.cursor()
+            for row in cur.execute("SELECT ID, file_path FROM Photos"):
+                results.append(row)
+        return results
 
 
     # ------------------------------
@@ -195,6 +213,7 @@ def root():
 
 
 # Scanning and deterministic information extraction
+
 @app.route("/scan")
 def scan():
     try:
@@ -213,9 +232,15 @@ def extract_metadata():
 
 
 # Picture querying
+
 @app.route("/photos")
 def get_all():
-    return {"message": "Retrieving all photos"}
+    reply = None
+    try:
+        reply = p.get_all()
+        return {"message": "OK", "payload": reply}
+    except Exception as e:
+        return {"message": f"Couldn't get all photos: {e}"}
 
 @app.route("/photos/<query>")
 def photos(query):
