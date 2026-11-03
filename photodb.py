@@ -87,13 +87,19 @@ class PhotoDB:
     # Data retrieval
     # --------------
 
-    def get_all(self):
+    def get_all_photos(self):
         results = []
         with sqlite3.connect("photo.db") as con:
             cur = con.cursor()
             for row in cur.execute("SELECT ID, file_path FROM Photos"):
                 results.append(row)
         return results
+
+    def get_photo_attributes(self, photo_id):
+        with sqlite3.connect("photo.db") as con:
+            cur = con.cursor()
+            for row in cur.execute("SELECT * FROM Photos WHERE ID = ?", (photo_id, )):
+                return row
 
 
     # ------------------------------
@@ -237,11 +243,23 @@ def extract_metadata():
 def get_all():
     reply = None
     try:
-        reply = p.get_all()
+        reply = p.get_all_photos()
         return {"message": "OK", "payload": reply}
     except Exception as e:
         return {"message": f"Couldn't get all photos: {e}"}
 
 @app.route("/photos/<query>")
-def photos(query):
+def get_query(query):
     return {"message": f"Query is {query}"}
+
+
+# Photo attribute retrieval
+
+@app.route("/attributes/<photo_id>")
+def get_attributes(photo_id):
+    reply = None
+    try:
+        reply = p.get_photo_attributes(photo_id)
+        return {"message": "OK", "payload": reply}
+    except Exception as e:
+        return {"message": f"Couldn't get photo attributes: {e}"}
