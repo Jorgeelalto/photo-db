@@ -1,7 +1,7 @@
 import re
 
 
-PHOTO_FOLDER="./photo_folder"
+PHOTO_FOLDER="photo_folder"
 
 PATTERN_YEAR = re.compile(
     '^(19[0-9]{2})|(20[0-9]{2})$'

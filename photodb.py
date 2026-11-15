@@ -1,5 +1,5 @@
 from pillow_heif import register_heif_opener
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from openai import OpenAI
 from pathlib import Path
 from io import BytesIO
@@ -91,8 +91,8 @@ class PhotoDB:
         results = []
         with sqlite3.connect("photo.db") as con:
             cur = con.cursor()
-            for row in cur.execute("SELECT ID, file_path FROM Photos"):
-                results.append(row)
+            for row in cur.execute("SELECT ID FROM Photos"):
+                results.append(row[0])
         return results
 
     def get_photo_attributes(self, photo_id):
@@ -237,6 +237,12 @@ def extract_metadata():
     return {"message": "Metadata extraction complete"}
 
 
+# Serving an actual image
+
+@app.route("/image/<photo_id>")
+def serve_image(photo_id):
+    return send_from_directory(PHOTO_FOLDER, p.get_photo_attributes(photo_id)[1])
+
 # Picture querying
 
 @app.route("/photos")
@@ -250,7 +256,15 @@ def get_all():
 
 @app.route("/photos/<query>")
 def get_query(query):
-    return {"message": f"Query is {query}"}
+    if query == "all":
+        reply = None
+        try:
+            reply = p.get_all_photos()
+            return {"message": "OK", "payload": reply}
+        except Exception as e:
+            return {"message": f"Couldn't get all photos: {e}"}
+    else:
+        return {"message": f"Query is {query}"}
 
 
 # Photo attribute retrieval
